@@ -1,0 +1,8 @@
+db:
+  user:     "_env:PGUSER:"
+  password: "_env:PGPASS:"
+  host:     "_env:PGHOST:"
+  port:     "_env:PGPORT:5432"
+  database: "_env:PGDATABASE:pgmm-db"
+  poolsize: "_env:PGPOOLSIZE:10"
+folder: ./migrations
