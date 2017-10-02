@@ -2,6 +2,7 @@ let
   pkgs = import ./pkgs.nix { config = { allowUnfree = true; }; };
   # Utilities to modify haskell packages
   justStaticExecutables = pkgs.haskell.lib.justStaticExecutables;
+  dontCheck = pkgs.haskell.lib.dontCheck;
   dontHaddock = pkgs.haskell.lib.dontHaddock;
   # Filter to exclude garbage from sources of derivations
   filterHaskell = src:
@@ -23,7 +24,7 @@ let
         cabalCallE = name: path: addSrcFilter (justStaticExecutables (haskellPackagesNew.callCabal2nix name path { }));
       in rec {
         config-app = call ./nixdeps/config-app.nix {};
-        postgres-manual-migrate = cabalCall "postgres-manual-migrate" ./.;
+        postgres-manual-migrate = dontCheck (cabalCall "postgres-manual-migrate" ./.);
       };
     };
 in packages

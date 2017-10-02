@@ -52,8 +52,24 @@ test-suite pg-mmigrate-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  build-depends:       base
-                     , postgres-manual-migrate
+  other-modules: MigrationSpec
+  build-depends:
+      base
+    , aeson
+    , config-app
+    , exceptions
+    , hspec                     >= 2.0.0
+    , HUnit
+    , monad-logger
+    , mtl                       >= 2.2    && < 2.3
+    , persistent
+    , persistent-postgresql
+    , postgres-manual-migrate
+    , pretty-show
+    , shakespeare               >= 2.0    && < 2.1
+    , temporary                 >= 1.2    && < 2.0
+    , text
+    , yaml
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
