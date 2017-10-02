@@ -22,6 +22,7 @@ let
         cabalCall  = name: path: addSrcFilter (haskellPackagesNew.callCabal2nix name path { });
         cabalCallE = name: path: addSrcFilter (justStaticExecutables (haskellPackagesNew.callCabal2nix name path { }));
       in rec {
+        config-app = call ./nixdeps/config-app.nix {};
         postgres-manual-migrate = cabalCall "postgres-manual-migrate" ./.;
       };
     };

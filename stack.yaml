@@ -2,6 +2,10 @@ resolver: lts-9.6
 
 packages:
 - .
+- location:
+    git: https://github.com/hexresearch/config-app.git
+    commit: a23131bd4337ef493a24e24f9934158de44a7db4
+  extra-dep: true
 extra-deps: []
 
 nix:
