@@ -1,0 +1,15 @@
+resolver: lts-9.6
+
+packages:
+- .
+extra-deps: []
+
+nix:
+  enable: false
+  path: [nixpkgs]
+  packages:
+    - binutils
+    - gmp
+    - git
+    - postgresql
+    - zlib
