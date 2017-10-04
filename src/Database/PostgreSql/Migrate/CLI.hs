@@ -1,4 +1,6 @@
 -- | CLI utilities for migration actions
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Database.PostgreSql.Migrate.CLI(
@@ -13,11 +15,13 @@ import Control.Monad
 import Control.Monad.Logger
 import Data.Aeson
 import Data.Data
+import Data.Data
 import Data.Maybe
 import Data.Monoid
 import Data.Text (pack, unpack)
 import Database.Persist.Postgresql
 import Database.PostgreSql.Migrate
+import GHC.Generics
 import Options.Applicative
 import System.ConfigApp
 import System.Directory.Tree
@@ -58,6 +62,7 @@ data MigrateCommand =
   | MigrateCommandLoad {
       migrationForce :: Bool -- ^ If files contradicts DB state, force replacement
     }
+  deriving (Eq, Ord, Show, Read, Generic, Data)
 
 -- | Parse migration options from CLI arguments
 migrateOptionsParser :: Parser (MigrateOptions a)
