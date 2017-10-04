@@ -2,6 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Main where
 
+import Control.Monad.Logger
 import Data.Aeson.TH (deriveFromJSON)
 import Data.Data
 import Data.Monoid
@@ -18,7 +19,8 @@ data MigrateConfig = MigrateConfig {
 $(deriveFromJSON defaultOptions ''MigrateConfig)
 
 main :: IO ()
-main = runMigrateOptions name migrateDb (unConfigPath . migrateFolder) =<< execParser opts
+main = runStdoutLoggingT . runMigrateOptions name migrateDb (unConfigPath . migrateFolder)
+  =<< execParser opts
   where
     name = "pg-mmigrage"
     fullName = "PostgreSQL manual migrate"

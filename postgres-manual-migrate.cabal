@@ -26,6 +26,7 @@ library
     , directory-tree            >= 0.12   && < 0.13
     , exceptions                >= 0.8    && < 0.9
     , filepath                  >= 1.4    && < 1.5
+    , monad-control             >= 1.0    && < 1.1
     , monad-logger              >= 0.3    && < 0.4
     , optparse-applicative      >= 0.12   && < 0.14
     , persistent                >= 2.6    && < 2.8
@@ -43,6 +44,7 @@ executable pg-mmigrate
       base
     , aeson
     , config-app
+    , monad-logger
     , optparse-applicative
     , persistent-postgresql
     , postgres-manual-migrate

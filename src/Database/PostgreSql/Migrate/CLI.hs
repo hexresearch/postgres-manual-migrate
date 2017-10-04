@@ -1,6 +1,8 @@
 -- | CLI utilities for migration actions
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Database.PostgreSql.Migrate.CLI(
@@ -9,16 +11,20 @@ module Database.PostgreSql.Migrate.CLI(
   , migrateOptionsParser
   , migrateCommandsParser
   , runMigrateOptions
+  , runMigrate
   ) where
 
 import Control.Monad
+import Control.Monad.Catch
+import Control.Monad.IO.Class
 import Control.Monad.Logger
+import Control.Monad.Trans.Control
 import Data.Aeson
 import Data.Data
 import Data.Data
 import Data.Maybe
 import Data.Monoid
-import Data.Text (pack, unpack)
+import Data.Text (Text, pack, unpack)
 import Database.Persist.Postgresql
 import Database.PostgreSql.Migrate
 import GHC.Generics
@@ -133,26 +139,36 @@ migrateCommandsParser = subparser $
         <> help "Force update up/down scripts in DB"
         )
 
--- | Run migrateion commands from given options
-runMigrateOptions :: (FromJSON a, Data a)
+-- | Run migration commands from given options with feature to extract data from
+-- user specific configuration file.
+runMigrateOptions :: (FromJSON a, Data a, MonadBaseControl IO m, MonadIO m, MonadCatch m, MonadLogger m)
   => String -- ^ Name of app, used for default config location ~/.<name>/prod/config.yaml
   -> (a -> PostgresConf) -- ^ Whay to extract postgresql config from value
   -> (a -> FilePath) -- ^ Location of migrations folder
   -> MigrateOptions a -- ^ Options to run
-  -> IO ()
+  -> m ()
 runMigrateOptions name getPgConfig getMigrationsFolder MigrateOptions{..} = do
   cfg <- readConfigBy name mOptionsConfig
   -- Create the database connection pool
   let dbCfg = getPgConfig cfg
-  pool :: ConnectionPool <- runStdoutLoggingT $ createPostgresqlPool
-      (pgConnStr  dbCfg) (pgPoolSize dbCfg)
-  let runDB = flip runSqlPool pool
       migrationsFolder = fromMaybe (getMigrationsFolder cfg) mOptionsMigrationsFolder
-  case mOptionsCommand of
+  runMigrate dbCfg migrationsFolder mOptionsCommand
+
+-- | Run migration commands
+runMigrate :: (MonadBaseControl IO m, MonadIO m, MonadCatch m, MonadLogger m)
+  => PostgresConf -- ^ Postgresql config for connection
+  -> FilePath -- ^ Location of migrations folder
+  -> MigrateCommand -- ^ Command to perform
+  -> m ()
+runMigrate dbCfg migrationsFolder cmd = do
+  pool :: ConnectionPool <- createPostgresqlPool
+      (pgConnStr dbCfg) (pgPoolSize dbCfg)
+  let runDB = flip runSqlPool pool
+  case cmd of
     MigrateCommandNew{..} -> do
       t <- runDB $ migrateNew migrationsFolder migrationName migrationNewVersion
-      putStrLn "Modify the following files:"
-      F.traverse_ putStrLn t
+      logInfoN "Modify the following files:"
+      F.traverse_ (logInfoN . pack) t
     MigrateCommandUp{..} -> do
       curn <- runDB getDbVersion
       maxn <- runDB getDbMaxVersion
@@ -162,8 +178,8 @@ runMigrateOptions name getPgConfig getMigrationsFolder MigrateOptions{..} = do
               Nothing -> fromMaybe 1 migrationUpSteps
       n <- runDB $ migrateUp steps
       newCurN <- runDB getDbVersion
-      putStrLn $ "Current version " ++ show newCurN
-      putStrLn $ "You are now behind the head by " ++ show n ++ " versions"
+      logInfoN $ "Current version " <> showt newCurN
+      logInfoN $ "You are now behind the head by " <> showt n <> " versions"
     MigrateCommandDown{..} -> do
       curn <- runDB getDbVersion
       maxn <- runDB getDbMaxVersion
@@ -173,9 +189,13 @@ runMigrateOptions name getPgConfig getMigrationsFolder MigrateOptions{..} = do
               Nothing -> fromMaybe 1 migrationDownSteps
       n <- runDB $ migrateDown steps
       newCurN <- runDB getDbVersion
-      putStrLn $ "Current version " ++ show newCurN
-      putStrLn $ "You are now behind the head by " ++ show n ++ " versions"
+      logInfoN $ "Current version " <> showt newCurN
+      logInfoN $ "You are now behind the head by " <> showt n <> " versions"
     MigrateCommandDump -> do
       runDB $ migrateDumpAll migrationsFolder
-      putStrLn "Done"
+      logInfoN "Done"
     MigrateCommandLoad{..} -> runDB $ loadMigrations migrationForce migrationsFolder
+
+-- | Helper to shorten text output code
+showt :: Show a => a -> Text
+showt = pack . show
