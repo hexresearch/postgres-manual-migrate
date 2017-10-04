@@ -10,7 +10,6 @@ extra-deps: []
 
 nix:
   enable: false
-  path: [nixpkgs]
   packages:
     - binutils
     - gmp
