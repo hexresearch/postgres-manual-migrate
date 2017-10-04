@@ -5,6 +5,7 @@ module Database.PostgreSql.Migrate.CLI(
     MigrateOptions(..)
   , MigrateCommand(..)
   , migrateOptionsParser
+  , migrateCommandsParser
   , runMigrateOptions
   ) where
 
@@ -71,14 +72,17 @@ migrateOptionsParser = MigrateOptions
       <> metavar "MIGRATIONS_FOLDER"
       <> help "Override location of migrations"
     )
-  <*> cmdParser
+  <*> migrateCommandsParser
+
+-- | Parse migration command from CLI arguments
+migrateCommandsParser :: Parser MigrateCommand
+migrateCommandsParser = subparser $
+       command "new" (info newArgs (progDesc "Generate new migrations files"))
+    <> command "up" (info upArgs (progDesc "Apply migrations"))
+    <> command "down" (info downArgs (progDesc "Reverse migrations"))
+    <> command "dump" (info (pure MigrateCommandDump) (progDesc "Dump all migrations from DB to disk"))
+    <> command "load" (info loadArgs (progDesc "Load migrations from files to DB and print info"))
   where
-    cmdParser = subparser $
-         command "new" (info newArgs (progDesc "Generate new migrations files"))
-      <> command "up" (info upArgs (progDesc "Apply migrations"))
-      <> command "down" (info downArgs (progDesc "Reverse migrations"))
-      <> command "dump" (info (pure MigrateCommandDump) (progDesc "Dump all migrations from DB to disk"))
-      <> command "load" (info loadArgs (progDesc "Load migrations from files to DB and print info"))
     newArgs = (helper <*>) $ MigrateCommandNew
       <$> (fmap pack . strArgument) (
            metavar "MIGRATION_NAME"
